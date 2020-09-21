@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33.3"
+rust-crypto = "0.2.36"
+rand = "0.7.3"
