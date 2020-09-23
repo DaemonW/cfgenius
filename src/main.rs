@@ -89,19 +89,20 @@ fn handle_enc(context: &ArgMatches, data: Vec<u8>) {
     file.write_all(&iv);
     file.write_all(&key);
     let mut buf = [0u8; 4096];
-    let mut out = Vec::<u8>::new();
     let mut encryptor = aes::cbc_encryptor(aes::KeySize::KeySize256, &key, &iv, blockmodes::PkcsPadding);
     let mut read_buf = crypto::buffer::RefReadBuffer::new(&data);
     let mut write_buf = crypto::buffer::RefWriteBuffer::new(&mut buf);
     loop {
         let result = encryptor.encrypt(&mut read_buf, &mut write_buf, true).unwrap();
-        out.extend(write_buf.take_read_buffer().take_remaining().iter().map(|&i| i));
+        if let Err(e) = file.write_all(write_buf.take_read_buffer().take_remaining()) {
+            eprintln!("{}",e);
+            break;
+        };
         match result {
             BufferResult::BufferUnderflow => break,
             BufferResult::BufferOverflow => {}
         }
     }
-    file.write_all(&out);
 }
 
 fn handle_dec(context: &ArgMatches, data: Vec<u8>) {
@@ -112,10 +113,10 @@ fn handle_dec(context: &ArgMatches, data: Vec<u8>) {
     let mut buf = [0u8; 4096];
     let mut write_buf = crypto::buffer::RefWriteBuffer::new(&mut buf);
     let mut decryptor = aes::cbc_decryptor(aes::KeySize::KeySize256, &key, &iv, blockmodes::PkcsPadding);
-    let mut out: Vec<u8> = Vec::new();
+    let mut out: Vec<u8> = Vec::with_capacity(data.len() + 16);
     loop {
         let result = decryptor.decrypt(&mut read_buf, &mut write_buf, true).unwrap();
-        out.extend(write_buf.take_read_buffer().take_remaining().iter().map(|&i| { i }));
+        out.extend(write_buf.take_read_buffer().take_remaining().iter());
         match result {
             BufferResult::BufferUnderflow => break,
             BufferResult::BufferOverflow => {}
