@@ -8,33 +8,12 @@ use std::io::{Read, stdin, Write};
 use std::process::exit;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
-use crypto::{aes,blockmodes};
+use crypto::{aes, blockmodes};
 use crypto::buffer::{BufferResult, ReadBuffer, RefReadBuffer, RefWriteBuffer, WriteBuffer};
 use rand::RngCore;
 
 fn main() {
-    let context = App::new("cfgenius")
-        .version("0.5.0")
-        .author("develop by daemonw")
-        .about("a config encode/decode tool")
-        .arg(Arg::with_name("d")
-            .short("d")
-            .help("decode a config file"))
-        .arg(Arg::with_name("e")
-            .short("e")
-            .help("encode a config file"))
-        .arg(Arg::with_name("file")
-            .short("f")
-            .long("file")
-            .value_name("FILE")
-            .help("specify the file path to be handled")
-            .takes_value(true))
-        .arg(Arg::with_name("o")
-            .short("o")
-            .takes_value(true)
-            .value_name("FILE")
-            .help("specify the output file, defaut is stdout"))
-        .get_matches();
+    let context = init_context();
     let cmd_enc = context.is_present("e");
     let cmd_dec = context.is_present("d");
     if cmd_enc && cmd_dec {
@@ -64,6 +43,31 @@ fn main() {
     } else {
         handle_enc(&context, input)
     }
+}
+
+fn init_context() -> ArgMatches<'static> {
+    App::new("cfgenius")
+        .version("0.5.0")
+        .author("develop by daemonw")
+        .about("a config encode/decode tool")
+        .arg(Arg::with_name("d")
+            .short("d")
+            .help("decode a config file"))
+        .arg(Arg::with_name("e")
+            .short("e")
+            .help("encode a config file"))
+        .arg(Arg::with_name("file")
+            .short("f")
+            .long("file")
+            .value_name("FILE")
+            .help("specify the file path to be handled")
+            .takes_value(true))
+        .arg(Arg::with_name("o")
+            .short("o")
+            .takes_value(true)
+            .value_name("FILE")
+            .help("specify the output file, defaut is stdout"))
+        .get_matches()
 }
 
 fn handle_enc(context: &ArgMatches, data: Vec<u8>) {
