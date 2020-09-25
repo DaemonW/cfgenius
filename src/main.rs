@@ -22,20 +22,21 @@ fn main() {
     }
     let mut input = vec![0; 1024];
     let file_path = context.value_of("file").unwrap_or("");
-    if file_path.is_empty() {
-        eprintln!("need to specify the file path");
+    let fi = fs::metadata(file_path).unwrap_or_else(|e| {
+        eprintln!("{}:{}", e, file_path);
         exit(-1);
-        return;
+    });
+    if fi.len() > 1024 * 1024 {
+        eprintln!("config file is too big to handle");
+        exit(-1);
     }
-    if !file_path.is_empty() {
-        match fs::read(file_path) {
-            Ok(data) => {
-                input = data;
-            }
-            Err(e) => {
-                println!("{}", e);
-                exit(-1);
-            }
+    match fs::read(file_path) {
+        Ok(data) => {
+            input = data;
+        }
+        Err(e) => {
+            println!("{}", e);
+            exit(-1);
         }
     }
     if cmd_dec {
@@ -76,11 +77,10 @@ fn handle_enc(context: &ArgMatches, data: Vec<u8>) {
         exit(-1);
     }
     let file_path = context.value_of("o").unwrap_or("");
-    if file_path.is_empty() {
-        eprintln!("output file path hasn't been specified");
+    let mut file = fs::File::create(file_path).unwrap_or_else(|e| {
+        eprintln!("{}:{}", e, file_path);
         exit(-1);
-    }
-    let mut file = fs::File::create(file_path).expect("create file failed");
+    });
     let mut key = [0u8; 32];
     let mut iv = [0u8; 16];
     let mut rng = rand::thread_rng();
@@ -95,7 +95,7 @@ fn handle_enc(context: &ArgMatches, data: Vec<u8>) {
     loop {
         let result = encryptor.encrypt(&mut read_buf, &mut write_buf, true).unwrap();
         if let Err(e) = file.write_all(write_buf.take_read_buffer().take_remaining()) {
-            eprintln!("{}",e);
+            eprintln!("{}", e);
             break;
         };
         match result {
